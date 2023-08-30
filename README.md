@@ -1,9 +1,11 @@
 # go-algo
-Learning go by implementing algorithms in it.
+This is a personal project. Probably not useful for others.
+
+Learning go by implementing algorithms in it. 
 
 
 ## Make
-We use make for developer tasks like building and installing.
+I use make for developer tasks like building and installing.
 
 Run `make` or `make help` to see what is available.
 
