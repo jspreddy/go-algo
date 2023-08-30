@@ -30,7 +30,11 @@ func prettyPrint(f func(float64) float64, x float64) {
 }
 
 func main() {
-	// prettyPrint(Sqrt, 2)
-	// prettyPrint(Sqrt, 4)
+	prettyPrint(Sqrt, 2)
+	prettyPrint(Sqrt, 4)
 	prettyPrint(Sqrt, 144)
+
+	// input := []int{1, 2, 4, 1, 5, 1, 6, 76, 87, 35, 54, 7878, 8}
+	// fmt.Println(input)
+	// fmt.Println(src.FirstPositiveInteger(input))
 }
