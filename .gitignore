@@ -22,5 +22,10 @@ go.work
 
 # project bin folder
 bin/*
+
+# tmp
+tmp/
+
 # my binary
 go-algo
+algo

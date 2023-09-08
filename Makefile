@@ -1,6 +1,7 @@
 # VERSION ?= $(shell git describe --long --tags)
 VERSION ?= "0.0"
 GOURL ?= github.com/jspreddy/go-algo
+OUTPUT_NAME ?= "algo"
 
 
 ##############################################################################
@@ -47,7 +48,7 @@ endif
 ##############################################################################
 # Makefile TARGETS:
 ##############################################################################
-.PHONY: build install help helper-line clean
+.PHONY: build install help helper-line clean watch
 .DEFAULT_GOAL := help
 
 
@@ -64,6 +65,7 @@ help: ## Show help documentation.
 	@make -s helper-line
 	@echo ""
 	@echo "Start by running ${YELLOW}'make install'${NORMAL}"
+	@echo "Or develop by running ${YELLOW}'make watch'${NORMAL}"
 	@echo ""
 	@grep -E '^[a-zA-Z_0-9%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "    ${YELLOW}%-30s${NORMAL} %s\n", $$1, $$2}'
 
@@ -79,3 +81,6 @@ install: build ## Will build and install binary into the go bin path.
 
 clean: ## Will clean the go outputs
 	go clean $(GOURL)
+
+watch: ## Will watch the filesystem using `air` and run the make install task
+	air
