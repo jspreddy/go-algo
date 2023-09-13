@@ -1,7 +1,6 @@
 package src
 
 import (
-	// "fmt"
 	"sort"
 )
 
@@ -15,8 +14,6 @@ func FirstPositiveInteger(A []int) int {
 
 	// sort the slice
 	sort.Ints(A)
-
-	// fmt.Println(A)
 
 	// iterate through the slice, A
 	for i := 0; i < len(A); i++ {

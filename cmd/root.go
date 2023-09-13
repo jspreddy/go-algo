@@ -7,35 +7,30 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jspreddy/go-algo/src"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "go-algo",
-	Short: "Entry point to run my implemented algorithms.",
-	Long:  ``,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	Run: func(cmd *cobra.Command, args []string) {
-		debug := false
-
-		src.PrettyPrint(src.Sqrt, 2, debug)
-		src.PrettyPrint(src.Sqrt, 4, debug)
-		src.PrettyPrint(src.Sqrt, 144, debug)
-
-		input := []int{1, 2, 4, 1, 5, 1, 6, 76, 87, 35, 54, 7878, 8}
-		fmt.Println(input)
-		fmt.Println(src.FirstPositiveInteger(input))
-	},
-}
+var (
+	cfgFile string = "$HOME/.go-algo/config.yaml"
+	rootCmd        = &cobra.Command{
+		Use:   "go-algo",
+		Short: "Entry point to run my implemented algorithms.",
+		Long:  ``,
+		// Run: func(cmd *cobra.Command, args []string) {
+		// 	debug := viper.GetBool("debug")
+		// 	if debug {
+		// 		log.SetLevel(log.DebugLevel)
+		// 	}
+		// },
+	}
+)
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
@@ -44,10 +39,27 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
+	cobra.OnInitialize(initConfig)
 
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.go-algo.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", cfgFile, "config file")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().Bool("debug", false, "output debug logs")
+	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+}
+
+func initConfig() {
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME/.go-algo")
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+		} else {
+			panic(fmt.Errorf("fatal error config file: %w", err))
+		}
+	} else {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
 }

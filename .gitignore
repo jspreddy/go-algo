@@ -29,3 +29,5 @@ tmp/
 # my binary
 go-algo
 algo
+config.yaml
+config.yml
