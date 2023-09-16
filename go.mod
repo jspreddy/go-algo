@@ -15,6 +15,8 @@ require (
 	github.com/creack/pty v1.1.18 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/gohugoio/hugo v0.118.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

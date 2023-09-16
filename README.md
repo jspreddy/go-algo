@@ -24,3 +24,18 @@ If you ran `make install` it will be available in path, so you can run it from a
 - [2023-09-08] For watching filesystem and rebuilding and rerunning the commands, I tried out `watch make install` which works but is very basic. [`air`](https://github.com/cosmtrek/air) package has more features. So, I am using air. The command flow is: 
     - `make watch -> air [using config in .air.toml]  -> make install -> air's runner`
 
+
+- opengl from go-gl/gl 
+```bash
+# Installed These items:
+go get -u github.com/go-gl/gl/v4.6-core/gl 
+go get -u github.com/go-gl/glfw/v3.3/glfw
+sudo apt-get install xorg-dev
+
+go get -u github.com/go-gl/gl/v4.6-compatibility/gl
+go get -u github.com/go-gl/gl/v3.1/gles2
+go get -u github.com/go-gl/gl/v2.1/gl
+```
+
+
+
