@@ -1,7 +1,10 @@
 package src
 
 import (
+	_ "embed"
+	"fmt"
 	"runtime"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/go-gl/gl/v4.6-core/gl"
@@ -9,9 +12,15 @@ import (
 )
 
 const windowWidth, windowHeight = 800, 600
+const FLOAT_SIZE_MULTIPLIER = 4
+
+//go:embed shaders/basic.vert
+var basicVertCode []byte
+
+//go:embed shaders/basic.frag
+var basicFragCode []byte
 
 func getSizeInBytes(points []float32) int {
-	FLOAT_SIZE_MULTIPLIER := 4
 	sizeBytes := FLOAT_SIZE_MULTIPLIER * len(points)
 	return sizeBytes
 }
@@ -22,8 +31,8 @@ func initWindow(title string) *glfw.Window {
 	}
 
 	glfw.WindowHint(glfw.Resizable, glfw.False)
-	// glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	// glfw.WindowHint(glfw.ContextVersionMinor, 6)
+	// glfw.WindowHint(glfw.ContextVersionMajor, 3)
+	// glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	// glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	// glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
@@ -37,7 +46,32 @@ func initWindow(title string) *glfw.Window {
 	return window
 }
 
-func createRenderPipeline() uint32 {
+func compileShader(source string, shaderType uint32) (uint32, error) {
+	shader := gl.CreateShader(shaderType)
+
+	csources, free := gl.Strs(source)
+	gl.ShaderSource(shader, 1, csources, nil)
+	free()
+	gl.CompileShader(shader)
+
+	var status int32
+	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
+	if status == gl.FALSE {
+		var logLength int32
+		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
+
+		logString := strings.Repeat("\x00", int(logLength+1))
+		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(logString))
+
+		log.Error("Shader Compile Error.", "string", logString)
+
+		return 0, fmt.Errorf("failed to compile %v: %v", source, logString)
+	}
+
+	return shader, nil
+}
+
+func createRenderPipeline(window *glfw.Window) uint32 {
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
@@ -46,23 +80,26 @@ func createRenderPipeline() uint32 {
 	log.Info("OpenGL version", "version", version)
 
 	prog := gl.CreateProgram()
+	log.Info("Glx Context", "major", window.GetAttrib(glfw.ContextVersionMajor))
+	log.Info("Glx Context", "minor", window.GetAttrib(glfw.ContextVersionMajor))
+	log.Info("Glx Context", "profile", window.GetAttrib(glfw.OpenGLProfile))
+	log.Info("Glx Context", "compat", window.GetAttrib(glfw.OpenGLForwardCompatible))
 
-	// TODO: create vert shader; compile; add to prog;
-	// vertShader := gl.CreateShader(gl.VERTEX_SHADER)
-	// gl.ShaderSource(vertShader, 1, &vertShaderString, len(vertShaderString))
+	vertShader, _ := compileShader(string(basicVertCode), gl.VERTEX_SHADER)
+	fragShader, _ := compileShader(string(basicFragCode), gl.FRAGMENT_SHADER)
 
-	// TODO: create frag shader; compile; add to prog;
-	// fragShader := gl.CreateShader(gl.FRAGMENT_SHADER)
-
+	gl.AttachShader(prog, vertShader)
+	gl.AttachShader(prog, fragShader)
 	gl.LinkProgram(prog)
 	return prog
 }
 
+// x, y, z, r, g, b,
 var (
 	triangle = []float32{
-		+0, +1, +0,
-		+1, -1, +0,
-		-1, -1, +0,
+		+0, +1, +0, +1, +0, +0,
+		+1, -1, +0, +0, +1, +0,
+		-1, -1, +0, +0, +0, +1,
 	}
 )
 
@@ -82,10 +119,14 @@ func sendDataToOpenGL(points []float32) {
 
 	// enable and tell opengl that the first attribute in array is the vertex and define the vertex
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, nil)
+
+	// describe color attribute
+	gl.EnableVertexAttribArray(1)
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
 }
 
-func draw(window *glfw.Window, programId uint32) {
+func drawLoop(window *glfw.Window, programId uint32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	gl.UseProgram(programId)
 
@@ -107,10 +148,10 @@ func UI() {
 	// defer the glfw to be cleaned up at the end
 	defer glfw.Terminate()
 
-	programId := createRenderPipeline()
+	programId := createRenderPipeline(window)
 	sendDataToOpenGL(triangle)
 
 	for !window.ShouldClose() {
-		draw(window, programId)
+		drawLoop(window, programId)
 	}
 }
