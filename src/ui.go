@@ -10,9 +10,10 @@ import (
 
 const windowWidth, windowHeight = 800, 600
 
-func init() {
-	// GLFW event handling must run on the main OS thread
-	// runtime.LockOSThread()
+func getSizeInBytes(points []float32) int {
+	FLOAT_SIZE_MULTIPLIER := 4
+	sizeBytes := FLOAT_SIZE_MULTIPLIER * len(points)
+	return sizeBytes
 }
 
 func initWindow(title string) *glfw.Window {
@@ -36,66 +37,80 @@ func initWindow(title string) *glfw.Window {
 	return window
 }
 
-func initOpenGL() uint32 {
+func createRenderPipeline() uint32 {
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
-	log.Debug("OpenGL version", version)
+	log.Info("OpenGL version", "version", version)
 
 	prog := gl.CreateProgram()
+
+	// TODO: create vert shader; compile; add to prog;
+	// vertShader := gl.CreateShader(gl.VERTEX_SHADER)
+	// gl.ShaderSource(vertShader, 1, &vertShaderString, len(vertShaderString))
+
+	// TODO: create frag shader; compile; add to prog;
+	// fragShader := gl.CreateShader(gl.FRAGMENT_SHADER)
+
 	gl.LinkProgram(prog)
 	return prog
-
 }
 
 var (
 	triangle = []float32{
-		0, 0.5, 0, // top
-		-0.5, -0.5, 0, // left
-		0.5, -0.5, 0, // right
+		+0, +1, +0,
+		+1, -1, +0,
+		-1, -1, +0,
 	}
 )
 
-func draw(vao uint32, window *glfw.Window, program uint32) {
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	gl.UseProgram(program)
+func sendDataToOpenGL(points []float32) {
+	sizeBytes := getSizeInBytes(points)
 
-	gl.BindVertexArray(vao)
-	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(triangle)/3))
+	var vboId uint32
+
+	// make space
+	gl.GenBuffers(1, &vboId)
+
+	// assign that space to ARRAY_BUFFER
+	gl.BindBuffer(gl.ARRAY_BUFFER, vboId)
+
+	// fill the ARRAY_BUFFER with data, which in turn points to vbo above because we bound ARRAY_BUFFER to vbo
+	gl.BufferData(gl.ARRAY_BUFFER, sizeBytes, gl.Ptr(points), gl.STATIC_DRAW)
+
+	// enable and tell opengl that the first attribute in array is the vertex and define the vertex
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
+}
+
+func draw(window *glfw.Window, programId uint32) {
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	gl.UseProgram(programId)
+
+	gl.DrawArrays(gl.TRIANGLES, 0, 3)
+
+	// should probably use a callback for window size instead of re-calc every frame.
+	w, h := window.GetSize()
+	gl.Viewport(0, 0, int32(w), int32(h))
 
 	glfw.PollEvents()
 	window.SwapBuffers()
 }
 
-// makeVao initializes and returns a vertex array from the points provided.
-func makeVao(points []float32) uint32 {
-	var vbo uint32
-	gl.GenBuffers(1, &vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, 4*len(points), gl.Ptr(points), gl.STATIC_DRAW)
-
-	var vao uint32
-	gl.GenVertexArrays(1, &vao)
-	gl.BindVertexArray(vao)
-	gl.EnableVertexAttribArray(0)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
-
-	return vao
-}
-
 func UI() {
+	// step 1: lock gl runtime to this thread
 	runtime.LockOSThread()
-
+	// step 2: initialize a window
 	window := initWindow("Test Window")
+	// defer the glfw to be cleaned up at the end
 	defer glfw.Terminate()
 
-	program := initOpenGL()
+	programId := createRenderPipeline()
+	sendDataToOpenGL(triangle)
 
-	vao := makeVao(triangle)
 	for !window.ShouldClose() {
-		draw(vao, window, program)
+		draw(window, programId)
 	}
 }
