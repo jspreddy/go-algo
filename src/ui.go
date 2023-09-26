@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/go-gl/gl/v4.6-core/gl"
@@ -71,7 +72,7 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
-func createRenderPipeline(window *glfw.Window) uint32 {
+func createProgram(window *glfw.Window) uint32 {
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
@@ -126,11 +127,15 @@ func sendDataToOpenGL(points []float32) {
 	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
 }
 
-func drawLoop(window *glfw.Window, programId uint32) {
+func drawLoop(window *glfw.Window, programId uint32, uTimeId int32, startTime time.Time) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	gl.UseProgram(programId)
 
 	gl.DrawArrays(gl.TRIANGLES, 0, 3)
+
+	diff := time.Since(startTime).Seconds()
+	log.Info("Time diff", "seconds", diff)
+	gl.Uniform1f(uTimeId, float32(diff))
 
 	// should probably use a callback for window size instead of re-calc every frame.
 	w, h := window.GetSize()
@@ -148,10 +153,15 @@ func UI() {
 	// defer the glfw to be cleaned up at the end
 	defer glfw.Terminate()
 
-	programId := createRenderPipeline(window)
+	programId := createProgram(window)
 	sendDataToOpenGL(triangle)
+	uniformIdStore := []string{"u_time\x00"}
+	uTimeId := gl.GetUniformLocation(programId, gl.Str(uniformIdStore[0]))
+	log.Info("Uniform", "u_time", uTimeId)
+
+	startTime := time.Now()
 
 	for !window.ShouldClose() {
-		drawLoop(window, programId)
+		drawLoop(window, programId, uTimeId, startTime)
 	}
 }
